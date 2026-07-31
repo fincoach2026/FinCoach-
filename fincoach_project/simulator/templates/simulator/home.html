@@ -1,0 +1,50 @@
+{% extends "simulator/app_shell.html" %}
+
+{% block title %}FinCoach Home{% endblock %}
+
+{% block app_content %}
+<div class="app-card">
+    <div class="section-title">Welcome back, {{ request.user.first_name|default:request.user.username|default:"Coach" }}</div>
+    <p class="section-subtitle">Your FinCoach dashboard helps you stay on track with smart choices, fast goals, and real progress.</p>
+</div>
+
+<div class="app-card">
+    <div class="grid-2">
+        <div class="metric-pill">
+            <span class="label">Savings</span>
+            <span class="value">$5,400</span>
+        </div>
+        <div class="metric-pill">
+            <span class="label">Debt Ratio</span>
+            <span class="value">18%</span>
+        </div>
+        <div class="metric-pill">
+            <span class="label">Monthly Cash</span>
+            <span class="value">$1,280</span>
+        </div>
+        <div class="metric-pill">
+            <span class="label">Goal Progress</span>
+            <span class="value">72%</span>
+        </div>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="section-title">Quick actions</div>
+    <div class="button-grid">
+        <a class="app-button" href="{% url 'simulator:start' %}">Run Simulator</a>
+        <a class="app-button" href="{% url 'simulator:tracker_app' %}">Open Tracker</a>
+        <a class="app-button" href="{% url 'simulator:lessons_app' %}">Review Lessons</a>
+        <a class="app-button" href="{% url 'simulator:helper_app' %}">Get Advice</a>
+    </div>
+</div>
+
+<div class="app-card">
+    <div class="section-title">Today’s priority</div>
+    <p class="section-subtitle">Finish the budgeting lesson and run one simulation round to see how your savings score changes.</p>
+    <div style="margin-top: 16px; display: flex; gap: 10px; align-items: center;">
+        <span class="small-pill">Budgeting</span>
+        <span class="small-pill">Emergency fund</span>
+    </div>
+</div>
+{% endblock %}
