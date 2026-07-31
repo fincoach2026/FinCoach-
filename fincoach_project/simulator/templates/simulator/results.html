@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}FinCoach - Your Results{% endblock %}
+
+{% block extra_head %}
+<style>
+    .results-wrapper {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 24px 20px;
+    }
+
+    .stat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin: 24px 0;
+    }
+
+    .stat-card {
+        background-color: var(--fc-white);
+        border: 1px solid #eee;
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--fc-deep-green);
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #555;
+    }
+
+    .decision-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .decision-list li {
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="results-wrapper">
+    <h1>Your Financial Future</h1>
+    <p>Here's how your decisions played out over the simulation.</p>
+
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-value">${{ run.current_savings }}</div>
+            <div class="stat-label">Savings</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">${{ run.current_debt }}</div>
+            <div class="stat-label">Debt</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">${{ run.current_monthly_expenses }}</div>
+            <div class="stat-label">Monthly Expenses</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ decisions|length }}</div>
+            <div class="stat-label">Decisions Made</div>
+        </div>
+    </div>
+
+    <canvas id="results-chart" height="200"></canvas>
+
+    <h2>Your Decisions</h2>
+    <ul class="decision-list">
+        {% for decision in decisions %}
+        <li>
+            <strong>{{ decision.scenario.title }}</strong> &mdash; chose "{{ decision.choice.label }}"
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+    // A simple bar chart comparing savings vs. debt. As we build out
+    // real month-by-month tracking, this can become a line chart
+    // showing the trend over time instead of just the final snapshot.
+    const ctx = document.getElementById("results-chart").getContext("2d");
+    new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: ["Savings", "Debt", "Monthly Expenses"],
+            datasets: [{
+                label: "Amount ($)",
+                data: [
+                    {{ run.current_savings }},
+                    {{ run.current_debt }},
+                    {{ run.current_monthly_expenses }}
+                ],
+                backgroundColor: ["#4DC49B", "#21815F", "#9FC35C"],
+            }],
+        },
+        options: {
+            scales: { y: { beginAtZero: true } },
+        },
+    });
+</script>
+{% endblock %}

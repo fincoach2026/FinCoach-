@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}FinCoach - Life Simulator{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* This page needs the 3D canvas to fill the screen, with the
+       scenario text/choices floating on top of it. */
+    .sim-wrapper {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 60px); /* full screen minus header height */
+    }
+
+    #sim-canvas-container {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* The scenario "card" that floats over the 3D scene, showing
+       the situation text and choice buttons. */
+    #scenario-overlay {
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(600px, 90%);
+        background-color: var(--fc-white);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    #scenario-title {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        color: var(--fc-deep-green);
+    }
+
+    #scenario-description {
+        font-size: 14px;
+        margin: 0 0 16px 0;
+    }
+
+    #choice-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    #loading-message {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 16px;
+        color: var(--fc-deep-green);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sim-wrapper">
+    <!-- Three.js will draw the 3D scene into this div -->
+    <div id="sim-canvas-container">
+        <p id="loading-message">Loading scenario...</p>
+    </div>
+
+    <!-- The situation text + choice buttons float on top of the 3D scene -->
+    <div id="scenario-overlay" style="display: none;">
+        <p id="scenario-title"></p>
+        <p id="scenario-description"></p>
+        <div id="choice-buttons"></div>
+    </div>
+</div>
+
+<!-- Three.js library, loaded from a CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- Our own code: sets up the 3D scene and talks to the Django API -->
+<script>
+    // Passed from Django so our JS knows which simulation run this is.
+    const RUN_ID = {{ run_id }};
+</script>
+<script src="{% static 'simulator/js/scene.js' %}"></script>
+{% endblock %}

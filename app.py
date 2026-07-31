@@ -8,7 +8,50 @@
 # can read it top to bottom and see how each part works.
 # =========================================================
 
+import os
+from pathlib import Path
+
 import streamlit as st
+import streamlit.components.v1 as components
+
+# This repository now uses a Django backend to serve the iOS app.
+# The legacy Streamlit prototype has been moved to `legacy_streamlit_app.py`.
+# To run the Django backend locally:
+#   cd fincoach_project
+#   python manage.py runserver
+
+print("This repository is configured as a Django backend. See fincoach_project/manage.py to run the server.")
+# Keep a minimal module surface so importing `app.py` doesn't error for tooling.
+PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_MODULES = {
+    "financial_helper": {
+        "title": "🧠 Financial Helper Module",
+        "summary": "This module groups the helper app files that power the money-advice experience.",
+        "files": [
+            ("views.py", PROJECT_ROOT / "fincoach_project" / "financial_helper" / "views.py"),
+            ("urls.py", PROJECT_ROOT / "fincoach_project" / "financial_helper" / "urls.py"),
+            ("template", PROJECT_ROOT / "fincoach_project" / "financial_helper" / "templates" / "financial_helper" / "helper.html"),
+        ],
+    },
+    "simulator": {
+        "title": "🎮 Simulator Module",
+        "summary": "This module contains the simulator views, routes, and the template used by the 3D experience.",
+        "files": [
+            ("views.py", PROJECT_ROOT / "fincoach_project" / "simulator" / "views.py"),
+            ("urls.py", PROJECT_ROOT / "fincoach_project" / "simulator" / "urls.py"),
+            ("template", PROJECT_ROOT / "fincoach_project" / "simulator" / "templates" / "simulator" / "simulator.html"),
+        ],
+    },
+    "tracker": {
+        "title": "📈 Tracker Module",
+        "summary": "This module is the finance dashboard scaffold, ready to be expanded into a richer tracker.",
+        "files": [
+            ("views.py", PROJECT_ROOT / "fincoach_project" / "tracker" / "views.py"),
+            ("urls.py", PROJECT_ROOT / "fincoach_project" / "tracker" / "urls.py"),
+            ("template", PROJECT_ROOT / "fincoach_project" / "tracker" / "templates" / "tracker" / "dashboard.html"),
+        ],
+    },
+}
 
 # ---------------------------------------------------------
 # PAGE SETUP
@@ -86,8 +129,50 @@ st.markdown(f"""
     .fc-banner * {{
         color: {COLOR_WHITE} !important;
     }}
+    .fc-gif-wrap {{
+        display: flex;
+        justify-content: center;
+        margin-bottom: 14px;
+    }}
 </style>
 """, unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# SCENE GIFS
+#
+# How this works for the team: drop a gif file into the
+# /gifs folder next to this app, using the exact filename
+# listed below for that scene, and it will show up
+# automatically the next time the app runs. Nobody needs to
+# edit or uncomment any code. If the file isn't there yet,
+# the app just skips it and moves on -- so it's always safe
+# to run the app before every gif exists.
+#
+# Example: to add the Home scene walking character, save a
+# file as  gifs/home.gif
+# ---------------------------------------------------------
+GIF_FOLDER = os.path.join(os.path.dirname(__file__), "gifs")
+
+SCENE_GIFS = {
+    "home": "home.gif",
+    "school": "school.gif",
+    "company": "company.gif",
+    "bank": "bank.gif",
+    "future": "future.gif",
+}
+
+def show_scene_gif(scene_key, caption=None, width=260):
+    """Shows the walking-character gif for a scene if the file
+    exists in /gifs. Safe to call even before the gif is added --
+    it just silently does nothing until the file shows up."""
+    filename = SCENE_GIFS.get(scene_key)
+    if not filename:
+        return
+    path = os.path.join(GIF_FOLDER, filename)
+    if os.path.exists(path):
+        st.markdown('<div class="fc-gif-wrap">', unsafe_allow_html=True)
+        st.image(path, width=width, caption=caption)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # SESSION STATE SETUP
@@ -113,12 +198,30 @@ init_state()
 # PART 1: THE LIFE SIMULATOR (Sprint 1 feature)
 #
 # This walks a user through a set of life stages (Home,
-# School, Company, Store, Bank) collecting info about them,
+# School, Company, Bank, Future) collecting info about them,
 # then shows a future projection at the end. We show the
 # "map" as a simple row of stage icons that light up green
-# once finished, since a full animated map needs graphics
-# tools beyond plain Streamlit.
+# once finished, plus a walking-character gif per scene once
+# the team drops one in.
+#
+# On purpose, this does NOT include: a clickable map with
+# roads/avatars, a family builder, an animated 2024-2050
+# slider, or achievements -- those were cut to fit the time
+# available and aren't needed to teach the money lesson.
 # =========================================================
+
+SIMULATOR_HTML_PATH = Path(__file__).resolve().parent / "fincoach_project" / "life_simulator_realistic.html"
+
+
+def load_simulator_html():
+    """Render the HTML-based life simulator inside the Streamlit app."""
+    if not SIMULATOR_HTML_PATH.exists():
+        st.error(f"Could not find the simulator file at {SIMULATOR_HTML_PATH}")
+        return
+
+    html = SIMULATOR_HTML_PATH.read_text(encoding="utf-8")
+    components.html(html, height=940, scrolling=False)
+
 
 SIM_STAGES = ["Home", "School", "Company", "Bank", "Future"]
 
@@ -144,211 +247,9 @@ def sim_back():
 
 def life_simulator_page():
     st.header("🧭 Life Simulator")
-    st.caption("Walk through a few real-life stages. At the end, you'll see how your choices might shape your future.")
-    sim_progress_map()
-    st.divider()
-
-    data = st.session_state.sim_data
-    step = st.session_state.sim_step
-
-    # ---- Stage 0: Home / Character creation ----
-    if step == 0:
-        st.subheader("🏠 Home: Tell us about yourself")
-        data["name"] = st.text_input("What's your name?", data.get("name", ""))
-        data["age"] = st.slider("How old are you?", 16, 70, data.get("age", 20))
-        data["has_family"] = st.radio("Do you currently have a family?", ["No", "Yes"],
-                                       index=0 if data.get("has_family", "No") == "No" else 1)
-        if data["has_family"] == "Yes":
-            data["family_size"] = st.number_input("How many dependents (kids/others) do you support?",
-                                                    min_value=0, max_value=10, value=data.get("family_size", 1))
-        st.divider()
-        st.markdown("#### 🏡 Housing")
-        h1, h2 = st.columns(2)
-        data["housing_type"] = h1.selectbox("Do you rent or own?", ["Rent", "Own"],
-                                             index=0 if data.get("housing_type", "Rent") == "Rent" else 1)
-        data["housing_cost"] = h2.number_input("Monthly housing payment ($)", min_value=0,
-                                                value=data.get("housing_cost", 1200))
-        st.markdown("#### 🧾 Monthly bills")
-        b1, b2, b3 = st.columns(3)
-        data["groceries"] = b1.number_input("Groceries ($)", min_value=0, value=data.get("groceries", 400))
-        data["utilities"] = b2.number_input("Utilities + internet + phone ($)", min_value=0,
-                                             value=data.get("utilities", 250))
-        data["other_expenses"] = b3.number_input("Other (fun, subscriptions, etc.) ($)",
-                                                  min_value=0, value=data.get("other_expenses", 200))
-        st.write("")
-        if st.button("Continue to School ➡️"):
-            sim_next()
-
-    # ---- Stage 1: School ----
-    elif step == 1:
-        st.subheader("🎓 School")
-        data["education_level"] = st.selectbox(
-            "What is your current education level?",
-            ["High School", "Trade School", "College", "Graduate", "Not currently studying"],
-            index=["High School", "Trade School", "College", "Graduate", "Not currently studying"].index(
-                data.get("education_level", "College"))
-        )
-        if data["education_level"] in ["College", "Graduate"]:
-            data["has_loan"] = st.radio("Do you have a student loan?", ["No", "Yes"],
-                                         index=0 if data.get("has_loan", "No") == "No" else 1)
-            if data["has_loan"] == "Yes":
-                l1, l2 = st.columns(2)
-                data["loan_amount"] = l1.number_input("Total student loan amount ($)", min_value=0,
-                                                       value=data.get("loan_amount", 20000))
-                data["loan_payment"] = l2.number_input("Monthly student loan payment ($)", min_value=0,
-                                                        value=data.get("loan_payment", 200))
-            else:
-                data["loan_amount"] = 0
-                data["loan_payment"] = 0
-        else:
-            data["loan_amount"] = data.get("loan_amount", 0)
-            data["loan_payment"] = data.get("loan_payment", 0)
-
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("⬅️ Back"):
-                sim_back()
-        with c2:
-            if st.button("Continue to Company ➡️"):
-                sim_next()
-
-    # ---- Stage 2: Company / Career ----
-    elif step == 2:
-        st.subheader("🏢 Company")
-        data["employment_status"] = st.selectbox(
-            "Employment status",
-            ["Student job", "Part-time", "Full-time", "Self-employed", "Unemployed"],
-            index=["Student job", "Part-time", "Full-time", "Self-employed", "Unemployed"].index(
-                data.get("employment_status", "Full-time"))
-        )
-        j1, j2 = st.columns(2)
-        data["job_title"] = j1.text_input("Job title", data.get("job_title", "Retail Associate"))
-        data["monthly_income"] = j2.number_input("Monthly income, after taxes ($)", min_value=0,
-                                                  value=data.get("monthly_income", 3000))
-        data["retirement_pct"] = st.slider("What % of your income goes to retirement savings?",
-                                            0, 30, data.get("retirement_pct", 5))
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("⬅️ Back", key="back2"):
-                sim_back()
-        with c2:
-            if st.button("Continue to Bank ➡️", key="next2"):
-                sim_next()
-
-    # ---- Stage 3: Bank ----
-    elif step == 3:
-        st.subheader("🏦 Bank")
-        s1, s2 = st.columns(2)
-        data["savings"] = s1.number_input("Current savings balance ($)", min_value=0, value=data.get("savings", 1000))
-        data["emergency_fund"] = s2.number_input("Emergency fund balance ($)", min_value=0,
-                                                  value=data.get("emergency_fund", 500))
-        d1, d2 = st.columns(2)
-        data["credit_card_debt"] = d1.number_input("Credit card debt ($)", min_value=0,
-                                                     value=data.get("credit_card_debt", 0))
-        data["credit_card_payment"] = d2.number_input("Monthly credit card payment ($)", min_value=0,
-                                                        value=data.get("credit_card_payment", 0))
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("⬅️ Back", key="back3"):
-                sim_back()
-        with c2:
-            if st.button("See My Future ➡️", key="next3"):
-                sim_next()
-
-    # ---- Stage 4: Future Projection ----
-    elif step == 4:
-        st.subheader("🔮 Your Future Projection")
-        years = st.slider("Look ahead how many years?", 1, 20, 5)
-
-        # --- The math behind the projection (plain English) ---
-        # Monthly leftover cash = income - all monthly costs.
-        # We assume: income grows a little every year (raises),
-        # leftover cash gets saved, and debts slowly shrink as
-        # they're paid off.
-        income = data.get("monthly_income", 3000)
-        housing = data.get("housing_cost", 1200)
-        groceries = data.get("groceries", 400)
-        utilities = data.get("utilities", 250)
-        other = data.get("other_expenses", 200)
-        loan_payment = data.get("loan_payment", 0)
-        cc_payment = data.get("credit_card_payment", 0)
-        retirement_pct = data.get("retirement_pct", 5) / 100
-
-        monthly_costs = housing + groceries + utilities + other + loan_payment + cc_payment
-        retirement_contribution = income * retirement_pct
-        leftover = income - monthly_costs - retirement_contribution
-
-        savings = float(data.get("savings", 1000))
-        emergency = float(data.get("emergency_fund", 500))
-        debt = float(data.get("loan_amount", 0)) + float(data.get("credit_card_debt", 0))
-        retirement_balance = 0.0
-
-        yearly_income = [income * 12]
-        yearly_savings = [savings]
-        yearly_debt = [debt]
-        yearly_net_worth = [savings + emergency - debt]
-
-        for year in range(1, years + 1):
-            income *= 1.03  # a small 3% yearly raise, on average
-            monthly_costs_growth = monthly_costs * 1.02  # bills creep up slightly too
-            retirement_contribution = income * retirement_pct
-            leftover = max(income - monthly_costs_growth - retirement_contribution, 0)
-
-            savings += leftover * 12
-            retirement_balance = (retirement_balance + retirement_contribution * 12) * 1.06  # investment growth
-            debt = max(debt - (loan_payment + cc_payment) * 12, 0)
-
-            yearly_income.append(income * 12)
-            yearly_savings.append(savings)
-            yearly_debt.append(debt)
-            yearly_net_worth.append(savings + emergency + retirement_balance - debt)
-
-        st.markdown('<div class="fc-banner"><h3>📊 Your Snapshot</h3></div>', unsafe_allow_html=True)
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Monthly leftover cash today", f"${leftover:,.0f}")
-        m2.metric(f"Projected net worth in {years} yrs", f"${yearly_net_worth[-1]:,.0f}")
-        m3.metric(f"Projected savings in {years} yrs", f"${yearly_savings[-1]:,.0f}")
-        m4.metric(f"Remaining debt in {years} yrs", f"${yearly_debt[-1]:,.0f}")
-
-        st.markdown("#### Net worth over time")
-        chart_data = {
-            "Year": list(range(0, years + 1)),
-            "Net Worth": yearly_net_worth,
-            "Savings": yearly_savings,
-            "Debt": yearly_debt,
-        }
-        st.line_chart(chart_data, x="Year", y=["Net Worth", "Savings", "Debt"])
-
-        st.markdown("#### What this tells you")
-        if leftover < 0:
-            st.markdown('<div class="fc-card">⚠️ Right now your monthly costs are higher than your income. '
-                        'That means debt or savings will shrink over time unless income goes up or costs come down.</div>',
-                        unsafe_allow_html=True)
-        elif leftover < 100:
-            st.markdown('<div class="fc-card">🟡 You are breaking even most months. Even a small emergency could '
-                        'be tough to cover. Building up that emergency fund should be a top priority.</div>',
-                        unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="fc-card">✅ You have positive cash flow every month. Keep automating '
-                        'savings and paying down debt, and your net worth should keep climbing.</div>',
-                        unsafe_allow_html=True)
-
-        st.divider()
-        st.markdown("#### Life update: has anything changed?")
-        st.caption("Check anything that applies, then restart to see a new projection with updated info.")
-        st.checkbox("Got a raise or new job")
-        st.checkbox("Had a child or added a dependent")
-        st.checkbox("Paid off a loan or credit card")
-        st.checkbox("Bought a home or car")
-
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("⬅️ Back to Bank"):
-                sim_back()
-        with c2:
-            if st.button("🔄 Start Over"):
-                st.session_state.sim_step = 0
-                st.session_state.sim_data = {}
+    st.caption("This view renders the HTML-based life simulator you built so it can run inside Streamlit.")
+    st.write("")
+    load_simulator_html()
 
 
 # =========================================================
@@ -799,12 +700,32 @@ def home_page():
 # This sidebar menu decides which page function runs.
 # =========================================================
 
+def render_project_module_page(module_key):
+    module = PROJECT_MODULES[module_key]
+    st.header(module["title"])
+    st.caption(module["summary"])
+    st.divider()
+
+    for label, path in module["files"]:
+        with st.expander(label, expanded=True):
+            if path.exists():
+                st.write(f"Path: {path}")
+                text = path.read_text(encoding="utf-8")
+                preview = text[:1600]
+                if len(text) > 1600:
+                    preview += "\n..."
+                st.code(preview, language="python" if path.suffix == ".py" else "html")
+            else:
+                st.warning(f"This file has not been created yet: {path}")
+
+
 st.sidebar.title("💰 FinCoach")
 st.sidebar.caption("Your money coach, in your pocket.")
 st.sidebar.divider()
 page = st.sidebar.radio("Go to", [
     "🏠 Home", "🧭 Life Simulator", "🤖 AI Financial Helper", "📊 Finance Tracker",
-    "📚 Financial Literacy Course", "✉️ Contact Us",
+    "📚 Financial Literacy Course", "🧠 Financial Helper Module", "🎮 Simulator Module",
+    "📈 Tracker Module", "✉️ Contact Us",
 ])
 page = page.split(" ", 1)[1]  # strip the emoji back off so the rest of the app's logic doesn't need to change
 
@@ -818,5 +739,13 @@ elif page == "Finance Tracker":
     finance_tracker_page()
 elif page == "Financial Literacy Course":
     course_page()
+elif page == "Financial Helper Module":
+    render_project_module_page("financial_helper")
+elif page == "Simulator Module":
+    render_project_module_page("simulator")
+elif page == "Tracker Module":
+    render_project_module_page("tracker")
 elif page == "Contact Us":
     contact_page()
+
+

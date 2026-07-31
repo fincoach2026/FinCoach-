@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}FinCoach Mobile App{% endblock %}
+
+{% block extra_head %}
+<style>
+    body {
+        min-height: 100vh;
+        margin: 0;
+        background: radial-gradient(circle at top, rgba(77,196,155,0.16), transparent 20%),
+                    linear-gradient(180deg, #edf5ef 0%, #e3ede5 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .app-frame {
+        width: min(460px, 96vw);
+        aspect-ratio: 430 / 932;
+        background: #141617;
+        border-radius: 60px;
+        box-shadow: 0 32px 100px rgba(0, 0, 0, 0.32);
+        overflow: hidden;
+        position: relative;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+    }
+
+    .app-screen {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background: linear-gradient(180deg, #f8faf8 0%, #edf3ed 100%);
+        padding: 18px;
+    }
+
+    .status-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #1c3722;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        padding-bottom: 10px;
+    }
+
+    .status-left,
+    .status-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: #3c8f57;
+        box-shadow: 0 0 0 2px rgba(60,143,87,0.18);
+    }
+
+    .app-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .app-title {
+        font-size: 21px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        color: #112615;
+    }
+
+    .app-subtitle {
+        font-size: 13px;
+        color: #4e6d5a;
+        margin-top: 4px;
+    }
+
+    .content-area {
+        flex: 1 1 0;
+        overflow-y: auto;
+        padding-right: 2px;
+    }
+
+    .app-card {
+        background: #ffffff;
+        border-radius: 28px;
+        padding: 18px;
+        margin-bottom: 14px;
+        box-shadow: 0 12px 26px rgba(21, 44, 30, 0.08);
+        border: 1px solid rgba(34, 75, 50, 0.08);
+    }
+
+    .app-card h2 {
+        margin: 0 0 10px;
+        font-size: 16px;
+        color: #1d3a21;
+    }
+
+    .app-card p {
+        margin: 0;
+        color: #546d5e;
+        line-height: 1.56;
+        font-size: 14px;
+    }
+
+    .button-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+    }
+
+    .app-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 12px;
+        background: linear-gradient(180deg, #4dc49b 0%, #3a8b6b 100%);
+        color: #fff;
+        border: none;
+        border-radius: 18px;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .app-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 26px rgba(34, 96, 63, 0.18);
+    }
+
+    .app-button.secondary {
+        background: #f7faf7;
+        color: #2f6f4b;
+        border: 1px solid rgba(45, 128, 77, 0.18);
+        box-shadow: none;
+    }
+
+    .app-button.secondary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 26px rgba(34, 96, 63, 0.12);
+    }
+
+    .link-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 16px;
+        border-radius: 18px;
+        text-decoration: none;
+        font-weight: 700;
+        transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .link-button.secondary {
+        background: #f4faf4;
+        color: #2d804d;
+        border: 1px solid rgba(45, 128, 77, 0.15);
+        box-shadow: 0 10px 24px rgba(32, 64, 40, 0.08);
+    }
+
+    .bottom-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        background: rgba(255,255,255,0.90);
+        backdrop-filter: blur(10px);
+        padding: 12px 0;
+        border-top: 1px solid rgba(34, 75, 50, 0.08);
+    }
+
+    .nav-link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        color: #5d7b69;
+        text-decoration: none;
+        font-size: 11px;
+    }
+
+    .nav-link.active {
+        color: #1d3a21;
+        font-weight: 700;
+    }
+
+    .nav-icon {
+        width: 22px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .iphone-label {
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 10px;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.72);
+        pointer-events: none;
+    }
+
+    .app-frame::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 24%);
+    }
+
+    .screen-frame {
+        border-radius: 46px;
+        background: linear-gradient(180deg, #f7fbf8 0%, #e8f2e9 100%);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.75);
+        padding: 18px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .metric-pill {
+        background: linear-gradient(180deg, #eff9f2 0%, #dff1e7 100%);
+        border-radius: 20px;
+        padding: 12px;
+        color: #1d3a21;
+    }
+
+    .metric-pill .label {
+        font-size: 11px;
+        color: #5f7f6a;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+        display: block;
+    }
+
+    .metric-pill .value {
+        font-size: 18px;
+        font-weight: 800;
+    }
+
+    .small-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(79, 171, 106, 0.14);
+        color: #1e3a23;
+        font-size: 12px;
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-frame">
+    <div class="iphone-label">FinCoach App</div>
+    <div class="app-screen">
+        <div class="status-bar">
+            <div class="status-left">
+                <span>9:41</span>
+                <span class="status-dot"></span>
+                <span>FinCoach</span>
+            </div>
+            <div class="status-right">
+                <span>5G</span>
+                <span>100%</span>
+            </div>
+        </div>
+
+        <div class="screen-frame">
+            <div class="app-header">
+                <div>
+                    <div class="app-title">Hi, {{ request.user.first_name|default:request.user.username|default:'Coach' }}</div>
+                    <div class="app-subtitle">Your FinCoach dashboard keeps your finance goals front and center.</div>
+                </div>
+                <div>
+                    <a class="link-button secondary" href="{% url 'simulator:logout' %}">Sign Out</a>
+                </div>
+            </div>
+
+            <div class="content-area">
+                {% block app_content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="{% url 'simulator:home' %}" class="nav-link {% if active == 'home' %}active{% endif %}">
+            <span class="nav-icon">🏠</span>
+            <span>Home</span>
+        </a>
+        <a href="{% url 'simulator:start' %}" class="nav-link {% if active == 'simulate' %}active{% endif %}">
+            <span class="nav-icon">🎮</span>
+            <span>Simulate</span>
+        </a>
+        <a href="{% url 'simulator:tracker_app' %}" class="nav-link {% if active == 'tracker' %}active{% endif %}">
+            <span class="nav-icon">📊</span>
+            <span>Tracker</span>
+        </a>
+        <a href="{% url 'simulator:lessons_app' %}" class="nav-link {% if active == 'lessons' %}active{% endif %}">
+            <span class="nav-icon">📚</span>
+            <span>Lessons</span>
+        </a>
+        <a href="{% url 'simulator:helper_app' %}" class="nav-link {% if active == 'helper' %}active{% endif %}">
+            <span class="nav-icon">💡</span>
+            <span>Helper</span>
+        </a>
+    </nav>
+</div>
+{% endblock %}
