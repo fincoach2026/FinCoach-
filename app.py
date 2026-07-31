@@ -23,35 +23,6 @@ import streamlit.components.v1 as components
 print("This repository is configured as a Django backend. See fincoach_project/manage.py to run the server.")
 # Keep a minimal module surface so importing `app.py` doesn't error for tooling.
 PROJECT_ROOT = Path(__file__).resolve().parent
-PROJECT_MODULES = {
-    "financial_helper": {
-        "title": "🧠 Financial Helper Module",
-        "summary": "This module groups the helper app files that power the money-advice experience.",
-        "files": [
-            ("views.py", PROJECT_ROOT / "fincoach_project" / "financial_helper" / "views.py"),
-            ("urls.py", PROJECT_ROOT / "fincoach_project" / "financial_helper" / "urls.py"),
-            ("template", PROJECT_ROOT / "fincoach_project" / "financial_helper" / "templates" / "financial_helper" / "helper.html"),
-        ],
-    },
-    "simulator": {
-        "title": "🎮 Simulator Module",
-        "summary": "This module contains the simulator views, routes, and the template used by the 3D experience.",
-        "files": [
-            ("views.py", PROJECT_ROOT / "fincoach_project" / "simulator" / "views.py"),
-            ("urls.py", PROJECT_ROOT / "fincoach_project" / "simulator" / "urls.py"),
-            ("template", PROJECT_ROOT / "fincoach_project" / "simulator" / "templates" / "simulator" / "simulator.html"),
-        ],
-    },
-    "tracker": {
-        "title": "📈 Tracker Module",
-        "summary": "This module is the finance dashboard scaffold, ready to be expanded into a richer tracker.",
-        "files": [
-            ("views.py", PROJECT_ROOT / "fincoach_project" / "tracker" / "views.py"),
-            ("urls.py", PROJECT_ROOT / "fincoach_project" / "tracker" / "urls.py"),
-            ("template", PROJECT_ROOT / "fincoach_project" / "tracker" / "templates" / "tracker" / "dashboard.html"),
-        ],
-    },
-}
 
 # ---------------------------------------------------------
 # PAGE SETUP
@@ -700,32 +671,12 @@ def home_page():
 # This sidebar menu decides which page function runs.
 # =========================================================
 
-def render_project_module_page(module_key):
-    module = PROJECT_MODULES[module_key]
-    st.header(module["title"])
-    st.caption(module["summary"])
-    st.divider()
-
-    for label, path in module["files"]:
-        with st.expander(label, expanded=True):
-            if path.exists():
-                st.write(f"Path: {path}")
-                text = path.read_text(encoding="utf-8")
-                preview = text[:1600]
-                if len(text) > 1600:
-                    preview += "\n..."
-                st.code(preview, language="python" if path.suffix == ".py" else "html")
-            else:
-                st.warning(f"This file has not been created yet: {path}")
-
-
 st.sidebar.title("💰 FinCoach")
 st.sidebar.caption("Your money coach, in your pocket.")
 st.sidebar.divider()
 page = st.sidebar.radio("Go to", [
     "🏠 Home", "🧭 Life Simulator", "🤖 AI Financial Helper", "📊 Finance Tracker",
-    "📚 Financial Literacy Course", "🧠 Financial Helper Module", "🎮 Simulator Module",
-    "📈 Tracker Module", "✉️ Contact Us",
+    "📚 Financial Literacy Course", "✉️ Contact Us",
 ])
 page = page.split(" ", 1)[1]  # strip the emoji back off so the rest of the app's logic doesn't need to change
 
@@ -739,13 +690,5 @@ elif page == "Finance Tracker":
     finance_tracker_page()
 elif page == "Financial Literacy Course":
     course_page()
-elif page == "Financial Helper Module":
-    render_project_module_page("financial_helper")
-elif page == "Simulator Module":
-    render_project_module_page("simulator")
-elif page == "Tracker Module":
-    render_project_module_page("tracker")
 elif page == "Contact Us":
     contact_page()
-
-
