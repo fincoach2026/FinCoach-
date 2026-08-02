@@ -1,0 +1,311 @@
+[
+  {
+    "timestamp": "2026-08-01T19:42:53",
+    "user": "ferran",
+    "action": "signup",
+    "details": {
+      "email": "ferran.torres@gmail.com"
+    }
+  },
+  {
+    "timestamp": "2026-08-01T19:44:46",
+    "user": "ferran",
+    "action": "quiz_submitted",
+    "details": {
+      "unit": 1,
+      "lesson": "1.1 Needs vs. Wants vs. Values",
+      "correct": 2,
+      "total": 3,
+      "points_earned": 4
+    }
+  },
+  {
+    "timestamp": "2026-08-01T19:48:19",
+    "user": "OG",
+    "action": "signup",
+    "details": {
+      "email": "torres@gmail.com"
+    }
+  },
+  {
+    "timestamp": "2026-08-01T19:52:25",
+    "user": "OG",
+    "action": "login",
+    "details": {}
+  },
+  {
+    "timestamp": "2026-08-01T19:56:44",
+    "user": "OG",
+    "action": "login",
+    "details": {}
+  },
+  {
+    "timestamp": "2026-08-01T20:03:00",
+    "user": "OG",
+    "action": "tracker_transaction_added",
+    "details": {
+      "type": "income",
+      "category": "Paycheck",
+      "amount": 50.0,
+      "date": "2026-08-01",
+      "note": ""
+    }
+  },
+  {
+    "timestamp": "2026-08-01T20:05:43",
+    "user": "Ibrahim ",
+    "action": "signup",
+    "details": {
+      "email": "A@b.com"
+    }
+  },
+  {
+    "timestamp": "2026-08-01T20:06:44",
+    "user": "Ibrahim ",
+    "action": "quiz_submitted",
+    "details": {
+      "unit": 1,
+      "lesson": "1.1 Needs vs. Wants vs. Values",
+      "correct": 1,
+      "total": 3,
+      "points_earned": 2
+    }
+  },
+  {
+    "timestamp": "2026-08-01T20:10:35",
+    "user": "Og",
+    "action": "signup",
+    "details": {
+      "email": "Osama.Gomaa.us@gmail.com"
+    }
+  },
+  {
+    "timestamp": "2026-08-01T20:11:13",
+    "user": "Og",
+    "action": "tracker_transaction_added",
+    "details": {
+      "type": "income",
+      "category": "Paycheck",
+      "amount": 59.0,
+      "date": "2026-08-01",
+      "note": ""
+    }
+  },
+  {
+    "timestamp": "2026-08-01T20:11:35",
+    "user": "Og",
+    "action": "tracker_goal_funded",
+    "details": {
+      "goal": "Emergency Fund",
+      "amount": 90.0
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:18:39",
+    "user": "Freddy",
+    "action": "signup",
+    "details": {
+      "email": "freddy@gmail.com"
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:19:01",
+    "user": "Freddy",
+    "action": "quiz_submitted",
+    "details": {
+      "unit": 1,
+      "lesson": "1.1 Needs vs. Wants vs. Values",
+      "correct": 2,
+      "total": 3,
+      "points_earned": 4
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:19:12",
+    "user": "Freddy",
+    "action": "quiz_submitted",
+    "details": {
+      "unit": 1,
+      "lesson": "1.1 Needs vs. Wants vs. Values",
+      "correct": 3,
+      "total": 3,
+      "points_earned": 6
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:19:22",
+    "user": "Freddy",
+    "action": "quiz_submitted",
+    "details": {
+      "unit": 1,
+      "lesson": "1.1 Needs vs. Wants vs. Values",
+      "correct": 3,
+      "total": 3,
+      "points_earned": 6
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:19:23",
+    "user": "Freddy",
+    "action": "quiz_submitted",
+    "details": {
+      "unit": 1,
+      "lesson": "1.1 Needs vs. Wants vs. Values",
+      "correct": 3,
+      "total": 3,
+      "points_earned": 6
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:20:46",
+    "user": "Freddy",
+    "action": "login",
+    "details": {}
+  },
+  {
+    "timestamp": "2026-08-02T14:21:34",
+    "user": "Freddy",
+    "action": "profile_updated",
+    "details": {
+      "display_name": "Freddy",
+      "email": "feddy@gmail.com",
+      "age": 18
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:21:35",
+    "user": "Freddy",
+    "action": "profile_updated",
+    "details": {
+      "display_name": "Freddy",
+      "email": "feddy@gmail.com",
+      "age": 18
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:22:49",
+    "user": "Freddy",
+    "action": "login",
+    "details": {}
+  },
+  {
+    "timestamp": "2026-08-02T14:28:12",
+    "user": "Freddy",
+    "action": "login",
+    "details": {}
+  },
+  {
+    "timestamp": "2026-08-02T14:30:21",
+    "user": "Freddy",
+    "action": "login",
+    "details": {}
+  },
+  {
+    "timestamp": "2026-08-02T14:32:47",
+    "user": "Freddy",
+    "action": "tracker_goal_funded",
+    "details": {
+      "goal": "Emergency Fund",
+      "amount": 550.0
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:32:55",
+    "user": "Freddy",
+    "action": "tracker_goal_funded",
+    "details": {
+      "goal": "Emergency Fund",
+      "amount": 200.0
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:33:19",
+    "user": "Freddy",
+    "action": "tracker_goal_funded",
+    "details": {
+      "goal": "Concert Trip",
+      "amount": 200.0
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:33:31",
+    "user": "Freddy",
+    "action": "tracker_goal_funded",
+    "details": {
+      "goal": "Concert Trip",
+      "amount": 200.0
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:33:32",
+    "user": "Freddy",
+    "action": "tracker_goal_funded",
+    "details": {
+      "goal": "Concert Trip",
+      "amount": 200.0
+    }
+  },
+  {
+    "timestamp": "2026-08-02T14:53:56",
+    "user": "Freddy",
+    "action": "login",
+    "details": {}
+  },
+  {
+    "timestamp": "2026-08-02T14:54:55",
+    "user": "Freddy",
+    "action": "login",
+    "details": {}
+  },
+  {
+    "timestamp": "2026-08-02T15:39:26",
+    "user": "Freddy",
+    "action": "login",
+    "details": {}
+  },
+  {
+    "timestamp": "2026-08-02T15:45:15",
+    "user": "Freddy",
+    "action": "login",
+    "details": {}
+  },
+  {
+    "timestamp": "2026-08-02T15:47:42",
+    "user": "Freddy",
+    "action": "quiz_submitted",
+    "details": {
+      "unit": 1,
+      "lesson": "1.1 Needs vs. Wants vs. Values",
+      "correct": 3,
+      "total": 3,
+      "points_earned": 6
+    }
+  },
+  {
+    "timestamp": "2026-08-02T15:58:46",
+    "user": "Freddy",
+    "action": "login",
+    "details": {}
+  },
+  {
+    "timestamp": "2026-08-02T16:02:32",
+    "user": "Freddy",
+    "action": "app_feedback_submitted",
+    "details": {
+      "rating": 4,
+      "comment": ""
+    }
+  },
+  {
+    "timestamp": "2026-08-02T16:03:06",
+    "user": "Freddy",
+    "action": "tracker_transaction_added",
+    "details": {
+      "type": "income",
+      "category": "Paycheck",
+      "amount": 2.5,
+      "date": "2026-08-02",
+      "note": ""
+    }
+  }
+]
