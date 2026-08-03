@@ -28,7 +28,7 @@ APP_DIR = os.path.dirname(os.path.abspath(__file__))
 HELP_FILE = os.path.join(APP_DIR, "help_data.json")
 VIDEO_PATH = os.path.join(APP_DIR, "assets", "help_video.mp4")
 
-CONTACT_EMAIL = "FinCoach2026@gmail.com"
+CONTACT_EMAIL = "contactus2026@gmail.com"
 
 SEED_QUESTIONS = [
     {
