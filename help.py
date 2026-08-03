@@ -120,7 +120,7 @@ def render_help():
     data = load_help_data()
 
     # ---- 1. Video tutorial ----
-    st.markdown("### 🎥 Quick walkthrough (~5 min)")
+    st.markdown("### 🎥 Quick walkthrough")
     if os.path.exists(VIDEO_PATH):
         st.video(VIDEO_PATH)
     else:
