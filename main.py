@@ -4,7 +4,9 @@ Feature set: Landing experience, Login/Signup, Finance Literacy Course,
 Life Simulation, Finance Tracker, Help, Profile.
 Run locally with:  streamlit run main.py
 """
+import email
 import json
+from google_sheets import log_event
 import os
 import time
 from pathlib import Path
@@ -19,6 +21,7 @@ from course_progress import (
     POINTS_PER_CORRECT, get_lesson_result, record_quiz_result,
 )
 from finance_tracker import render_tracker
+from finny import render_finny_page
 from help import render_help
 from profile_page import render_profile
 from dashboard import render_dashboard
@@ -110,6 +113,7 @@ NAV_ITEMS = [
     ("🏠 Dashboard", "dashboard"),
     ("📚 Finance Literacy Course", "course"),
     ("🎮 Life Simulation", "life_sim"),
+    ("🤖 Finny — AI Helper", "finny"),
     ("📊 Finance Tracker", "tracker"),
     ("❓ Help", "help"),
 ]
@@ -328,13 +332,7 @@ def render_why_us():
 # ---------------------------------------------------------------------------
 def render_auth():
     top_bar(show_nav=False)
-    # st.container(key=...) genuinely wraps everything rendered inside the
-    # `with` block in one real parent div (class "st-key-fc_auth_page"),
-    # unlike the old two-separate-st.markdown-calls trick — that never
-    # actually nested the text inputs inside it, so the guaranteed-contrast
-    # CSS in styles.py silently never matched, leaving inputs on the
-    # unscoped default style (white text with no forced background —
-    # invisible white-on-white when typing in dark mode).
+
     with st.container(key="fc_auth_page"):
         left, right = st.columns([1, 1])
 
@@ -350,6 +348,7 @@ def render_auth():
 
         with right:
             st.markdown("<div class='fc-fade fc-fade-delay-1'>", unsafe_allow_html=True)
+
             tab_login, tab_signup = st.tabs(["Log In", "Sign Up"])
 
             with tab_login:
@@ -357,12 +356,23 @@ def render_auth():
                     username = st.text_input("Username")
                     password = st.text_input("Password", type="password")
                     submitted = st.form_submit_button("Log In", use_container_width=True)
+
                 if submitted:
                     users = load_users()
+
                     if username in users and users[username]["password"] == password:
                         st.session_state.user = username
+
+                        # Google Sheets logging
+                        log_event({
+                            "username": username,
+                            "action": "Login",
+                            "status": "Success"
+                        })
+
                         log_action(username, "login")
                         goto("dashboard")
+
                     else:
                         st.error("Incorrect username or password.")
 
@@ -371,21 +381,48 @@ def render_auth():
                     new_username = st.text_input("Choose a username")
                     new_email = st.text_input("Email")
                     new_password = st.text_input("Choose a password", type="password")
-                    submitted_su = st.form_submit_button("Create Account", use_container_width=True)
+                    submitted_su = st.form_submit_button(
+                        "Create Account",
+                        use_container_width=True
+                    )
+
                 if submitted_su:
                     users = load_users()
+
                     if not new_username or not new_password:
                         st.error("Username and password are required.")
+
                     elif new_username in users:
                         st.error("That username is already taken.")
+
                     else:
-                        users[new_username] = {"password": new_password, "email": new_email}
+                        users[new_username] = {
+                            "password": new_password,
+                            "email": new_email
+                        }
+
                         save_users(users)
+
+                        # Google Sheets logging
+                        log_event({
+                            "username": new_username,
+                            "email": new_email,
+                            "action": "Signup",
+                            "status": "Success"
+                        })
+
                         st.session_state.user = new_username
-                        log_action(new_username, "signup", {"email": new_email})
+
+                        log_action(
+                            new_username,
+                            "signup",
+                            {"email": new_email}
+                        )
+
                         st.success("Account created! Taking you in...")
                         time.sleep(0.6)
                         goto("dashboard")
+
             st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -576,6 +613,12 @@ elif page == "life_sim":
     else:
         top_bar(show_nav=True, show_menu=True)
         render_life_sim()
+elif page == "finny":
+    if st.session_state.user is None:
+        goto("auth")
+    else:
+        top_bar(show_nav=True, show_menu=True)
+        render_finny_page()
 elif page == "tracker":
     if st.session_state.user is None:
         goto("auth")
