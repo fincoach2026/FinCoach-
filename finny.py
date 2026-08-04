@@ -1,7 +1,10 @@
 """
 finny.py — FinCoach's AI Helper Bot ("Finny")
 
-A recyclable, chat-style financial situation analyzer.
+A recyclable, chat-style financial situation analyzer. Uses the app's
+existing brand CSS (fc-card / fc-badge / fc-fade, --fc-* vars from
+styles.py) so it matches dark mode and every other page automatically.
+
 Flow:
   1) SITUATION   -> user types a free-text situation statement
   2) COLLECTING  -> Finny welcomes them + asks for structured financial inputs
@@ -12,74 +15,67 @@ Flow:
                      milestone timeline, what-it-buys, checklist, guardrail)
   5) -> resets back to SITUATION for a brand-new conversation
 
-Drop this file next to main.py, course_data.py, life_simulation.py,
-finance_tracker.py, styles.py. Integration notes are at the bottom of this file.
+Called from main.py's router the same way render_tracker() / render_help() /
+render_profile() are — top_bar() is invoked by the router before this runs,
+not inside this file, to match that convention.
 """
 
 import streamlit as st
 
 # ---------------------------------------------------------------------------
-# BRAND COLORS (matches styles.py palette)
+# Scoped CSS: everything here rides on the --fc-* vars already injected by
+# styles.get_css(), so it inherits dark mode for free. Only the warning tint
+# colors (red/yellow) are new — they're functional alert colors, not brand
+# chrome, so they sit outside the strict palette on purpose.
 # ---------------------------------------------------------------------------
-PRIMARY = "#4DC49B"       # main green
-PRIMARY_DARK = "#21815F"  # deep green (headers/accents)
-SECONDARY = "#488C74"     # muted green
-ACCENT = "#9FC35C"        # lime accent
-WHITE = "#FFFFFF"
-TEXT = "#000000"
-WARN_RED = "#E05B5B"
-WARN_YELLOW = "#E0B94D"
-
-BUBBLE_CSS = f"""
+FINNY_CSS = """
 <style>
-.finny-bubble {{
-    background-color: {WHITE};
-    border: 1px solid {PRIMARY};
-    border-radius: 14px;
-    padding: 14px 16px;
+.fc-finny-verdict {
+    background: linear-gradient(135deg, var(--fc-primary), var(--fc-secondary));
+    color: #ffffff !important;
+    border-radius: 18px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+.fc-finny-verdict p, .fc-finny-verdict b, .fc-finny-verdict div {
+    color: #ffffff !important;
+}
+.fc-finny-warn-red {
+    background: rgba(224,91,91,0.14);
+    border-left: 5px solid #E05B5B;
+    border-radius: 12px;
+    padding: 12px 16px;
     margin-bottom: 10px;
-}}
-.finny-bubble-title {{
-    color: {PRIMARY_DARK};
-    font-weight: 700;
-    margin-bottom: 4px;
-}}
-.finny-verdict {{
-    background-color: {PRIMARY};
-    color: {WHITE};
-    border-radius: 14px;
-    padding: 14px 16px;
+}
+.fc-finny-warn-yellow {
+    background: rgba(224,185,77,0.16);
+    border-left: 5px solid #E0B94D;
+    border-radius: 12px;
+    padding: 12px 16px;
     margin-bottom: 10px;
-    font-weight: 600;
-}}
-.finny-warn-red {{
-    background-color: #FBEAEA;
-    border-left: 6px solid {WARN_RED};
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-bottom: 10px;
-    color: {TEXT};
-}}
-.finny-warn-yellow {{
-    background-color: #FBF6E3;
-    border-left: 6px solid {WARN_YELLOW};
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-bottom: 10px;
-    color: {TEXT};
-}}
-.finny-alt-card {{
-    background-color: {WHITE};
-    border: 1px solid {ACCENT};
-    border-radius: 14px;
-    padding: 12px 14px;
-    margin-bottom: 10px;
-}}
+}
+.fc-finny-warn-red p, .fc-finny-warn-yellow p {
+    margin: 0;
+    color: var(--fc-text) !important;
+}
+.fc-finny-alt-card {
+    background: var(--fc-card-bg);
+    border: 1.5px solid var(--fc-highlight);
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+}
+.fc-finny-alt-card b, .fc-finny-alt-card p {
+    color: var(--fc-text) !important;
+}
 </style>
 """
 
+
 # ---------------------------------------------------------------------------
-# STATE MACHINE HELPERS
+# STATE MACHINE HELPERS (all keys prefixed finny_ so they never collide with
+# course/tracker/life-sim state)
 # ---------------------------------------------------------------------------
 def _init_state():
     defaults = {
@@ -103,7 +99,9 @@ def _reset_conversation():
 
 
 # ---------------------------------------------------------------------------
-# CORE FINANCIAL LOGIC (rule-based, no external calls)
+# CORE FINANCIAL LOGIC (rule-based, no external calls — same style as your
+# other calculators: amortization payment formula, % of income thresholds,
+# 3-months-expenses emergency fund rule)
 # ---------------------------------------------------------------------------
 def _monthly_payment(principal, annual_rate_pct, term_months):
     if principal <= 0 or term_months <= 0:
@@ -130,19 +128,14 @@ def _analyze(inputs):
 
     pct_income = (payment / income * 100) if income > 0 else 0
     leftover = income - commitments - payment
-    weekly_income = income * 12 / 52
-    hourly_est = inputs.get("hourly_rate")
 
     # Verdict
     if pct_income <= 15 and leftover > 0:
         verdict = "This is a comfortable, low-risk plan for your income level."
-        verdict_tone = "good"
     elif pct_income <= 20 and leftover > 0:
         verdict = "This is tight, not impossible. A missed shift or slow month would put you behind."
-        verdict_tone = "caution"
     else:
         verdict = "This plan is high-risk right now — the payment eats too much of your income."
-        verdict_tone = "risky"
 
     # Warnings
     warnings = []
@@ -154,7 +147,8 @@ def _analyze(inputs):
                                      f"income — on the higher end of the recommended range."))
     if leftover < 200:
         warnings.append(("red", f"After commitments and this payment, you'd have roughly "
-                                  f"${max(leftover,0):.0f}/month left for food, gas, insurance, and everything else."))
+                                  f"${max(leftover, 0):.0f}/month left for food, gas, insurance, and "
+                                  f"everything else."))
     elif leftover < 500:
         warnings.append(("yellow", f"After commitments and this payment, you'd have roughly ${leftover:.0f}/month "
                                      f"of breathing room — enough for essentials, but little cushion."))
@@ -167,14 +161,13 @@ def _analyze(inputs):
                                      f"improvement could lower your total cost noticeably."))
 
     # Alternatives
-    alt_b_down = down + (income - commitments) * 0.5 * 6  # save ~half of leftover income for 6 months
-    alt_b_down = min(alt_b_down, car_price)
+    alt_b_down = min(down + (income - commitments) * 0.5 * 6, car_price)  # save ~half of leftover for 6mo
     alt_b_loan = max(car_price - alt_b_down, 0)
     alt_b_payment = _monthly_payment(alt_b_loan, rate, term)
     alt_b_total = alt_b_payment * term + alt_b_down
     interest_saved_b = total_paid - alt_b_total
 
-    alt_c_price = round(car_price * 0.75, -2)  # ~25% cheaper car, round to nearest 100
+    alt_c_price = round(car_price * 0.75, -2)  # ~25% cheaper car
     alt_c_loan = max(alt_c_price - down, 0)
     alt_c_payment = _monthly_payment(alt_c_loan, rate, term)
     alt_c_total = alt_c_payment * term + down
@@ -186,19 +179,12 @@ def _analyze(inputs):
         "total_interest": total_interest,
         "pct_income": pct_income,
         "leftover": leftover,
-        "weekly_income": weekly_income,
-        "hourly_rate": hourly_est,
         "verdict": verdict,
-        "verdict_tone": verdict_tone,
         "warnings": warnings,
-        "alt_b": {
-            "down": alt_b_down, "payment": alt_b_payment,
-            "total": alt_b_total, "interest_saved": interest_saved_b,
-        },
-        "alt_c": {
-            "price": alt_c_price, "payment": alt_c_payment, "total": alt_c_total,
-            "payment_drop": payment - alt_c_payment,
-        },
+        "alt_b": {"down": alt_b_down, "payment": alt_b_payment, "total": alt_b_total,
+                   "interest_saved": interest_saved_b},
+        "alt_c": {"price": alt_c_price, "payment": alt_c_payment, "total": alt_c_total,
+                   "payment_drop": payment - alt_c_payment},
     }
 
 
@@ -210,71 +196,70 @@ def _build_detail(inputs, analysis, chosen):
     rate = inputs["interest_rate"]
 
     if chosen == "B":
-        price = inputs["car_price"]
-        down = analysis["alt_b"]["down"]
-        payment = analysis["alt_b"]["payment"]
-        total = analysis["alt_b"]["total"]
+        price, down = inputs["car_price"], analysis["alt_b"]["down"]
+        payment, total = analysis["alt_b"]["payment"], analysis["alt_b"]["total"]
     elif chosen == "C":
-        price = analysis["alt_c"]["price"]
-        down = inputs["down_payment"]
-        payment = analysis["alt_c"]["payment"]
-        total = analysis["alt_c"]["total"]
+        price, down = analysis["alt_c"]["price"], inputs["down_payment"]
+        payment, total = analysis["alt_c"]["payment"], analysis["alt_c"]["total"]
     else:
-        price = inputs["car_price"]
-        down = inputs["down_payment"]
-        payment = analysis["payment"]
-        total = analysis["total_paid"]
+        price, down = inputs["car_price"], inputs["down_payment"]
+        payment, total = analysis["payment"], analysis["total_paid"]
 
     financed = max(price - down, 0)
     pct_income = (payment / income * 100) if income > 0 else 0
-    year1_interest_share = 61  # illustrative first-year amortization skew, matches your mockup framing
     leftover = income - commitments - payment
 
     return {
         "price": price, "down": down, "payment": payment, "total": total,
         "financed": financed, "pct_income": pct_income, "term": term, "rate": rate,
-        "year1_interest_share": year1_interest_share, "leftover": leftover,
+        "leftover": leftover,
     }
 
 
 # ---------------------------------------------------------------------------
 # RENDER HELPERS
 # ---------------------------------------------------------------------------
-def _bubble(title, body_md):
+def _bubble(title, body_html):
     st.markdown(
-        f'<div class="finny-bubble"><div class="finny-bubble-title">{title}</div>{body_md}</div>',
+        f"<div class='fc-card fc-fade' style='margin-bottom:12px;'>"
+        f"<h4 style='margin-top:0;'>{title}</h4><p style='margin-bottom:0;'>{body_html}</p></div>",
         unsafe_allow_html=True,
     )
 
 
 def _warn(tone, text):
-    cls = "finny-warn-red" if tone == "red" else "finny-warn-yellow"
+    cls = "fc-finny-warn-red" if tone == "red" else "fc-finny-warn-yellow"
     icon = "🔴" if tone == "red" else "🟡"
-    st.markdown(f'<div class="{cls}">{icon} {text}</div>', unsafe_allow_html=True)
+    st.markdown(f"<div class='{cls}'><p>{icon} {text}</p></div>", unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
 # MAIN PAGE ENTRY POINT
+# main.py's router should call: top_bar(show_nav=True, show_menu=True); render_finny_page()
+# (same pattern as render_tracker() / render_help() / render_profile())
 # ---------------------------------------------------------------------------
 def render_finny_page():
-    st.markdown(BUBBLE_CSS, unsafe_allow_html=True)
+    st.markdown(FINNY_CSS, unsafe_allow_html=True)
     _init_state()
 
-    st.markdown(f"<h1 style='color:{TEXT};'>Finny — Your AI Money Helper</h1>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='fc-fade'><span class='fc-badge'>AI HELPER</span>"
+        "<h1>Finny — Your AI Money Helper</h1></div>",
+        unsafe_allow_html=True,
+    )
 
     stage = st.session_state["finny_stage"]
 
     # ---------------- STAGE 1: SITUATION ----------------
     if stage == "situation":
-        st.markdown(f"<p style='color:{PRIMARY_DARK}; font-weight:600;'>Situation Statement:</p>",
-                     unsafe_allow_html=True)
+        st.markdown("<p style='font-weight:600;'>Situation Statement:</p>", unsafe_allow_html=True)
         situation = st.text_area(
             "situation_input",
             placeholder="I'm 19, making $18/hour, and I'm thinking about financing a used car.",
             label_visibility="collapsed",
-            key="situation_box",
+            key="finny_situation_box",
         )
-        if st.button("Send ➤", key="send_situation"):
+        if st.button("Send ➤", key="finny_send_situation"):
             if situation.strip():
                 st.session_state["finny_situation"] = situation.strip()
                 st.session_state["finny_stage"] = "collecting"
@@ -283,7 +268,7 @@ def render_finny_page():
                 st.warning("Tell Finny a bit about your situation first.")
         return
 
-    # Always show the situation statement as the top of the "conversation"
+    # Show the situation statement as the top of the "conversation"
     _bubble("You said:", st.session_state["finny_situation"])
 
     # ---------------- STAGE 2: COLLECTING ----------------
@@ -302,7 +287,7 @@ def render_finny_page():
             down_payment = st.number_input("Down Payment Available ($)", min_value=0.0, step=100.0)
             interest_rate = st.number_input("Estimated Interest Rate (%)", min_value=0.0, step=0.1)
             loan_term = st.number_input("Loan Term (months)", min_value=1, step=1, value=60)
-            submitted = st.form_submit_button("Get My Analysis ➤")
+            submitted = st.form_submit_button("Get My Analysis ➤", use_container_width=True)
 
         if submitted:
             inputs = {
@@ -327,14 +312,16 @@ def render_finny_page():
     if stage == "analysis":
         _bubble("Finny", "Thanks for the response. Here's your analysis right now 👇")
 
-        st.markdown(f'<div class="finny-verdict">Verdict<br>{analysis["verdict"]}</div>',
-                     unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='fc-finny-verdict'><b>Verdict</b><p>{analysis['verdict']}</p></div>",
+            unsafe_allow_html=True,
+        )
 
         _bubble(
             "Monthly Budget Impact",
             f"Your payment would be about <b>${analysis['payment']:.0f}/month</b> — that's "
             f"<b>{analysis['pct_income']:.0f}%</b> of your take-home income. After setting that aside, "
-            f"you'd have roughly <b>${max(analysis['leftover'],0):.0f}/month</b> left for food, gas, "
+            f"you'd have roughly <b>${max(analysis['leftover'], 0):.0f}/month</b> left for food, gas, "
             f"insurance, and everything else.",
         )
 
@@ -343,54 +330,52 @@ def render_finny_page():
             "Total Cost Over Time",
             f"Car price: ${inputs['car_price']:.0f}. Total over {term} months: "
             f"${analysis['total_paid']:.0f}. Total interest: ${analysis['total_interest']:.0f} — "
-            f"{(analysis['total_interest']/inputs['car_price']*100 if inputs['car_price'] else 0):.0f}% "
+            f"{(analysis['total_interest'] / inputs['car_price'] * 100 if inputs['car_price'] else 0):.0f}% "
             f"more than the car itself.",
         )
 
-        st.markdown(f"<p style='color:{PRIMARY_DARK}; font-weight:700; margin-top:8px;'>⚠ Watch Out For:</p>",
-                     unsafe_allow_html=True)
+        st.markdown("<p style='font-weight:700; margin-top:8px;'>⚠ Watch Out For:</p>", unsafe_allow_html=True)
         for tone, text in analysis["warnings"]:
             _warn(tone, text)
 
-        st.markdown(f"<p style='color:{PRIMARY_DARK}; font-weight:700; margin-top:8px;'>Alternatives:</p>",
-                     unsafe_allow_html=True)
+        st.markdown("<p style='font-weight:700; margin-top:8px;'>Alternatives:</p>", unsafe_allow_html=True)
 
         b = analysis["alt_b"]
         st.markdown(
-            f'<div class="finny-alt-card"><b>Option B</b> — Wait 6 months, save a bigger down payment.<br>'
-            f'Impact: Payment drops to about ${b["payment"]:.0f}/month. Total interest drops to '
-            f'about ${(b["total"] - inputs["car_price"] if inputs["car_price"] else 0):.0f} — saves you '
-            f'~${b["interest_saved"]:.0f} over the life of the loan.</div>',
+            f"<div class='fc-finny-alt-card'><b>Option B</b> — Wait 6 months, save a bigger down payment.<br>"
+            f"Impact: Payment drops to about ${b['payment']:.0f}/month. Total interest drops to about "
+            f"${(b['total'] - inputs['car_price'] if inputs['car_price'] else 0):.0f} — saves you "
+            f"~${b['interest_saved']:.0f} over the life of the loan.</div>",
             unsafe_allow_html=True,
         )
         c = analysis["alt_c"]
         st.markdown(
-            f'<div class="finny-alt-card"><b>Option C</b> — Same down payment, ${c["price"]:.0f} car instead.<br>'
-            f'Impact: Payment drops to about ${c["payment"]:.0f}/month — cuts your negative-equity risk '
-            f'almost entirely by month 6.</div>',
+            f"<div class='fc-finny-alt-card'><b>Option C</b> — Same down payment, ${c['price']:.0f} car "
+            f"instead.<br>Impact: Payment drops to about ${c['payment']:.0f}/month — cuts your "
+            f"negative-equity risk almost entirely by month 6.</div>",
             unsafe_allow_html=True,
         )
 
         _bubble(
             "Summary",
             "This is the overall summary based on your situation and goal. If you'd like a full plan "
-            "for an alternative option, pick one below. If you're ready as-is, we'll finalize your current plan. "
-            "We'll always make sure you have all the details you need! 🙂",
+            "for an alternative option, pick one below. If you're ready as-is, we'll finalize your "
+            "current plan. We'll always make sure you have all the details you need! 🙂",
         )
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            if st.button("Continue with current plan"):
+            if st.button("Continue with current plan", key="finny_pick_current", use_container_width=True):
                 st.session_state["finny_chosen_alt"] = "current"
                 st.session_state["finny_stage"] = "detail"
                 st.rerun()
         with col2:
-            if st.button("I want Option B"):
+            if st.button("I want Option B", key="finny_pick_b", use_container_width=True):
                 st.session_state["finny_chosen_alt"] = "B"
                 st.session_state["finny_stage"] = "detail"
                 st.rerun()
         with col3:
-            if st.button("I want Option C"):
+            if st.button("I want Option C", key="finny_pick_c", use_container_width=True):
                 st.session_state["finny_chosen_alt"] = "C"
                 st.session_state["finny_stage"] = "detail"
                 st.rerun()
@@ -398,18 +383,18 @@ def render_finny_page():
         free_text = st.text_input(
             "Or tell Finny what you'd like next",
             placeholder="I want to continue with option C",
-            key="analysis_free_text",
+            key="finny_analysis_free_text",
         )
-        if st.button("Send ➤", key="analysis_free_text_send") and free_text.strip():
-            lowered = free_text.lower()
-            chosen = "B" if " b" in f" {lowered}" or "option b" in lowered else \
-                     "C" if " c" in f" {lowered}" or "option c" in lowered else "current"
+        if st.button("Send ➤", key="finny_analysis_free_text_send") and free_text.strip():
+            lowered = f" {free_text.lower()} "
+            chosen = "B" if "option b" in lowered or " b " in lowered else \
+                     "C" if "option c" in lowered or " c " in lowered else "current"
             st.session_state["finny_chosen_alt"] = chosen
             st.session_state["finny_stage"] = "detail"
             st.rerun()
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Start a new conversation instead 🔄"):
+        st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+        if st.button("Start a new conversation instead 🔄", key="finny_restart_from_analysis"):
             _reset_conversation()
             st.rerun()
         return
@@ -432,31 +417,34 @@ def render_finny_page():
         first_pay_principal = max(d["payment"] - first_pay_interest, 0)
         _bubble(
             "Payment Breakdown",
-            f"Monthly payment: ${d['payment']:.0f}. In your first year, about "
-            f"{d['year1_interest_share']}% of each payment goes to interest, and "
-            f"${first_pay_principal:.0f} goes to principal — that ratio improves every year as the "
-            f"balance drops. Total paid over {d['term']} months: ${d['total']:.0f}.",
+            f"Monthly payment: ${d['payment']:.0f}. Early in the loan, more of each payment goes to "
+            f"interest (about ${first_pay_interest:.0f} of your first payment) than principal (about "
+            f"${first_pay_principal:.0f}) — that ratio improves every year as the balance drops. "
+            f"Total paid over {d['term']} months: ${d['total']:.0f}.",
         )
 
-        pct_tone = "yellow" if d["pct_income"] > 15 else None
-        budget_line = (f"This payment is about {d['pct_income']:.0f}% of your take-home income. "
-                        f"Combined with your existing ${inputs['monthly_commitments']:.0f}/month in "
-                        f"commitments, you're putting roughly {(d['pct_income'] + (inputs['monthly_commitments']/inputs['monthly_income']*100 if inputs['monthly_income'] else 0)):.0f}% "
-                        f"of income toward fixed costs — comfortable under 30%, a caution zone above it.")
-        _bubble("Budget Fit", budget_line)
+        combined_pct = d["pct_income"] + (
+            inputs["monthly_commitments"] / inputs["monthly_income"] * 100 if inputs["monthly_income"] else 0
+        )
+        _bubble(
+            "Budget Fit",
+            f"This payment is about {d['pct_income']:.0f}% of your take-home income. Combined with your "
+            f"existing ${inputs['monthly_commitments']:.0f}/month in commitments, you're putting roughly "
+            f"{combined_pct:.0f}% of income toward fixed costs — comfortable under 30%, a caution zone "
+            f"above it.",
+        )
 
         _bubble(
             "Milestone Timeline",
-            f"You cross into positive equity around month {max(round(d['term']*0.15),3)} "
-            f"after that, if you needed to sell, you'd get more than you owe. "
-            f"Loan paid off in {d['term']} months.",
+            f"You cross into positive equity around month {max(round(d['term'] * 0.15), 3)} — after "
+            f"that, if you needed to sell, you'd get more than you owe. Loan paid off in {d['term']} months.",
         )
 
         _bubble(
             "What This Actually Buys",
             f"At ${d['price']:.0f}, expect a used sedan or compact SUV roughly 8–10 years old with "
-            f"85,000–110,000 miles — reliable economy models. Budget for new tires and lower coverage "
-            f"as it ages.",
+            f"85,000–110,000 miles — reliable economy models. Budget for new tires and a bit more "
+            f"maintenance as it ages.",
         )
 
         _bubble(
@@ -478,48 +466,10 @@ def render_finny_page():
                 f"savings, a bigger cushion before you sign would meaningfully reduce your risk here.",
             )
 
-        _bubble(
-            "That's the summary",
-            f"That's the summary of {label}. If you need any more information, feel free to let us know 🙂",
-        )
+        _bubble("That's the summary", f"That's the summary of {label}. If you need any more information, feel free to let us know 🙂")
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Start a new situation 🔄", key="restart_after_detail"):
+        st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+        if st.button("Start a new situation 🔄", key="finny_restart_from_detail"):
             _reset_conversation()
             st.rerun()
         return
-
-
-# ---------------------------------------------------------------------------
-# INTEGRATION NOTES (not executed — read me)
-# ---------------------------------------------------------------------------
-"""
-1) main.py routing:
-   from finny import render_finny_page
-   ...
-   elif st.session_state["current_page"] == "Finny":
-       render_finny_page()
-
-2) Hamburger menu (sidebar) entry, alongside Course / Life Simulator / Finance
-   Tracker links:
-   if st.sidebar.button("🤖 Finny", key="nav_finny"):
-       st.session_state["current_page"] = "Finny"
-       st.rerun()
-
-3) This module owns its own session_state keys (all prefixed "finny_"), so it
-   won't collide with course_data.py / life_simulation.py / finance_tracker.py
-   state. Navigating away and back mid-conversation will simply resume where
-   the user left off, since state persists for the session.
-
-4) The "recyclable" loop: after the DETAIL stage, the only action available is
-   "Start a new situation", which calls _reset_conversation() and reruns —
-   this drops the user right back at the Situation Statement box (stage 1),
-   matching the flow in your screenshots.
-
-5) The financial formulas here are the same style of rule-based calculator as
-   your existing AI Financial Helper (amortization payment formula, % of
-   income thresholds, 3-months-expenses emergency fund rule). If your current
-   helper module has more refined thresholds/copy, swap the constants inside
-   _analyze() to match — the state machine and UI around it don't need to
-   change.
-"""
