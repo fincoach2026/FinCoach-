@@ -13,6 +13,7 @@ Stored in activity_log.json, next to main.py.
 import json
 import os
 from datetime import datetime
+from google_sheets import log_event
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 ACTIVITY_FILE = os.path.join(APP_DIR, "activity_log.json")
@@ -34,17 +35,19 @@ def _save(entries):
 
 
 def log_action(username, action, details=None):
-    """Append one activity record: who, what action, what data, when.
-    Never raises — logging must never break the app the user is using."""
-    try:
-        entries = _load()
-        entries.append({
-            "timestamp": datetime.now().isoformat(timespec="seconds"),
-            "user": username,
-            "action": action,
-            "details": details or {},
-        })
-        _save(entries)
+    _save(entries)
+    entries.append(...)
+
+    _save(entries)
+
+    google_row = {
+        "username": username,
+        "action": action,
+    }
+
+    google_row.update(details or {})
+
+    log_event(google_row)
     except Exception:
         pass
 
