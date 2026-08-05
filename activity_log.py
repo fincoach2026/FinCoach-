@@ -35,20 +35,36 @@ def _save(entries):
 
 
 def log_action(username, action, details=None):
-    _save(entries)
-    entries.append(...)
+    """
+    Save activity locally and mirror it to Google Sheets.
+    Logging should never interrupt the app if something fails.
+    """
+    try:
+        details = details or {}
 
-    _save(entries)
+        entries = _load()
 
-    google_row = {
-        "username": username,
-        "action": action,
-    }
+        entry = {
+            "timestamp": datetime.now().isoformat(timespec="seconds"),
+            "user": username,
+            "action": action,
+            "details": details,
+        }
 
-    google_row.update(details or {})
+        entries.append(entry)
+        _save(entries)
 
-    log_event(google_row)
+        google_data = {
+            "username": username,
+            "action": action,
+        }
+
+        google_data.update(details)
+
+        log_event(google_data)
+
     except Exception:
+        # Never let logging crash the app
         pass
 
 
