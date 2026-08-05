@@ -361,44 +361,31 @@ def render_auth():
 
                 if submitted:
                     users = load_users()
-
-                   if username not in users:
+                
+                    if username not in users:
                         st.error("Username does not exist.")
-                    
+                
                     else:
                         stored_hash = users[username]["password"]
-                    
+                
                         if bcrypt.checkpw(
                             password.encode("utf-8"),
                             stored_hash.encode("utf-8")
                         ):
                             st.session_state.user = username
-                    
+                
+                            # Google Sheets logging
                             log_event({
                                 "username": username,
                                 "action": "Login",
                                 "status": "Success"
                             })
-                    
+                
                             log_action(username, "login")
                             goto("dashboard")
-                    
+                
                         else:
                             st.error("Incorrect username or password.")
-                        st.session_state.user = username
-
-                        # Google Sheets logging
-                        log_event({
-                            "username": username,
-                            "action": "Login",
-                            "status": "Success"
-                        })
-
-                        log_action(username, "login")
-                        goto("dashboard")
-
-                    else:
-                        st.error("Incorrect username or password.")
 
             with tab_signup:
                 with st.form("signup_form"):
