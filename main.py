@@ -10,6 +10,8 @@ from google_sheets import log_event
 import os
 import time
 from pathlib import Path
+import bcrypt
+
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -360,7 +362,12 @@ def render_auth():
                 if submitted:
                     users = load_users()
 
-                    if username in users and users[username]["password"] == password:
+                    stored_hash = users[username]["password"]
+
+                    if bcrypt.checkpw(
+                        password.encode("utf-8"),
+                        stored_hash.encode("utf-8")
+                    ):
                         st.session_state.user = username
 
                         # Google Sheets logging
@@ -396,8 +403,13 @@ def render_auth():
                         st.error("That username is already taken.")
 
                     else:
+                        hashed_password = bcrypt.hashpw(
+                            new_password.encode("utf-8"),
+                            bcrypt.gensalt()
+                        ).decode("utf-8")
+
                         users[new_username] = {
-                            "password": new_password,
+                            "password": hashed_password,
                             "email": new_email
                         }
 
