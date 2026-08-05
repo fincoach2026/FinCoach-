@@ -87,15 +87,29 @@ def render_life_sim():
 
 
 def load_users():
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
+    try:
+        if not os.path.exists(USERS_FILE):
+            return {}
+
+        with open(USERS_FILE, "r") as f:
+            data = json.load(f)
+
+            if isinstance(data, dict):
+                return data
+
+            return {}
+
+    except (json.JSONDecodeError, FileNotFoundError):
+        # Reset corrupted file
+        with open(USERS_FILE, "w") as f:
+            json.dump({}, f, indent=4)
+
+        return {}
 
 
 def save_users(users):
-    with open(USERS_FILE, "w", encoding="utf-8") as f:
-        json.dump(users, f)
+    with open(USERS_FILE, "w") as f:
+        json.dump(users, f, indent=4)
 
 
 def goto(page):
@@ -362,37 +376,27 @@ def render_auth():
                 if submitted:
                     users = load_users()
                 
-                    if username not in users:
+                    if not username or not password:
+                        st.error("Username and password are required.")
+                
+                    elif username not in users:
                         st.error("Username does not exist.")
                 
                     else:
-                        stored_hash = users[username]["password"]
+                        stored_hash = users[username].get("password", "")
                 
                         try:
-                            if bcrypt.checkpw(
+                            password_correct = bcrypt.checkpw(
                                 password.encode("utf-8"),
                                 stored_hash.encode("utf-8")
-                            ):
-                                st.session_state.user = username
-                        
-                                log_event({
-                                    "username": username,
-                                    "action": "Login",
-                                    "status": "Success"
-                                })
-                        
-                                log_action(username, "login")
-                                goto("dashboard")
-                        
-                            else:
-                                st.error("Incorrect username or password.")
-                        
-                        except ValueError:
-                            st.error("Account password data is corrupted. Please create a new account.")
-                            
+                            )
+                
+                        except Exception:
+                            password_correct = False
+                
+                        if password_correct:
                             st.session_state.user = username
                 
-                            # Google Sheets logging
                             log_event({
                                 "username": username,
                                 "action": "Login",
@@ -400,6 +404,7 @@ def render_auth():
                             })
                 
                             log_action(username, "login")
+                
                             goto("dashboard")
                 
                         else:
@@ -417,50 +422,49 @@ def render_auth():
 
                 if submitted_su:
                     users = load_users()
-
+                
                     if not new_username or not new_password:
                         st.error("Username and password are required.")
-
+                
                     elif "@" not in new_email:
-                        st.error("Please enter a valid email address.")
-
-                    elif new_username in users:
-                        st.error("That username is already taken.")
-
+                        st.error("Please enter a valid email.")
+                
                     elif len(new_password) < 8:
                         st.error("Password must be at least 8 characters.")
-
+                
+                    elif new_username in users:
+                        st.error("That username is already taken.")
+                
                     else:
                         hashed_password = bcrypt.hashpw(
                             new_password.encode("utf-8"),
                             bcrypt.gensalt()
                         ).decode("utf-8")
-
+                
                         users[new_username] = {
                             "password": hashed_password,
                             "email": new_email
                         }
-
+                
                         save_users(users)
-
-                        # Google Sheets logging
+                
                         log_event({
                             "username": new_username,
                             "email": new_email,
                             "action": "Signup",
                             "status": "Success"
                         })
-
+                
                         st.session_state.user = new_username
-
+                
                         log_action(
                             new_username,
                             "signup",
                             {"email": new_email}
                         )
-
-                        st.success("Account created! Taking you in...")
-                        time.sleep(0.6)
+                
+                        st.success("Account created!")
+                
                         goto("dashboard")
 
             st.markdown("</div>", unsafe_allow_html=True)
