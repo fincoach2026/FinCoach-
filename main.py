@@ -362,12 +362,29 @@ def render_auth():
                 if submitted:
                     users = load_users()
 
-                    stored_hash = users[username]["password"]
-
-                    if bcrypt.checkpw(
-                        password.encode("utf-8"),
-                        stored_hash.encode("utf-8")
-                    ):
+                   if username not in users:
+                        st.error("Username does not exist.")
+                    
+                    else:
+                        stored_hash = users[username]["password"]
+                    
+                        if bcrypt.checkpw(
+                            password.encode("utf-8"),
+                            stored_hash.encode("utf-8")
+                        ):
+                            st.session_state.user = username
+                    
+                            log_event({
+                                "username": username,
+                                "action": "Login",
+                                "status": "Success"
+                            })
+                    
+                            log_action(username, "login")
+                            goto("dashboard")
+                    
+                        else:
+                            st.error("Incorrect username or password.")
                         st.session_state.user = username
 
                         # Google Sheets logging
@@ -399,8 +416,14 @@ def render_auth():
                     if not new_username or not new_password:
                         st.error("Username and password are required.")
 
+                    elif "@" not in new_email:
+                        st.error("Please enter a valid email address.")
+
                     elif new_username in users:
                         st.error("That username is already taken.")
+
+                    elif len(new_password) < 8:
+                        st.error("Password must be at least 8 characters.")
 
                     else:
                         hashed_password = bcrypt.hashpw(
