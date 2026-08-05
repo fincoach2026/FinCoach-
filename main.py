@@ -368,10 +368,28 @@ def render_auth():
                     else:
                         stored_hash = users[username]["password"]
                 
-                        if bcrypt.checkpw(
-                            password.encode("utf-8"),
-                            stored_hash.encode("utf-8")
-                        ):
+                       try:
+                            if bcrypt.checkpw(
+                                password.encode("utf-8"),
+                                stored_hash.encode("utf-8")
+                            ):
+                                st.session_state.user = username
+                        
+                                log_event({
+                                    "username": username,
+                                    "action": "Login",
+                                    "status": "Success"
+                                })
+                        
+                                log_action(username, "login")
+                                goto("dashboard")
+                        
+                            else:
+                                st.error("Incorrect username or password.")
+                        
+                        except ValueError:
+                            st.error("Account password data is corrupted. Please create a new account.")
+                            
                             st.session_state.user = username
                 
                             # Google Sheets logging
