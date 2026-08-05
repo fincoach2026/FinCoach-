@@ -368,7 +368,7 @@ def render_auth():
                     else:
                         stored_hash = users[username]["password"]
                 
-                       try:
+                        try:
                             if bcrypt.checkpw(
                                 password.encode("utf-8"),
                                 stored_hash.encode("utf-8")
